@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Secure Messaging App (AES + RSA)</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jsencrypt/3.2.1/jsencrypt.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f9;
+      margin: 0; padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #2c3e50;
+    }
+    .container {
+      max-width: 800px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
+    }
+    textarea, input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background: #3498db;
+      color: white;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+    button:hover {
+      background: #2980b9;
+    }
+    .result {
+      background: #ecf0f1;
+      padding: 10px;
+      border-radius: 5px;
+      margin-top: 10px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔐 Secure Messaging App</h1>
+    
+    <h3>Step 1: Enter Your Message</h3>
+    <textarea id="message" rows="4" placeholder="Type your message here..."></textarea>
+    <button onclick="encryptMessage()">Encrypt</button>
+
+    <h3>🔒 Encrypted Data</h3>
+    <div class="result" id="encryptedOutput"></div>
+
+    <h3>Step 2: Decrypt Message</h3>
+    <button onclick="decryptMessage()">Decrypt</button>
+    <div class="result" id="decryptedOutput"></div>
+  </div>
+
+  <script>
+    // Generate RSA Keys
+    const crypt = new JSEncrypt({default_key_size: 1024});
+    crypt.getKey();
+    const publicKey = crypt.getPublicKey();
+    const privateKey = crypt.getPrivateKey();
+
+    let encryptedAESKey, ciphertext;
+
+    function encryptMessage() {
+      const message = document.getElementById("message").value;
+      if (!message) {
+        alert("Please enter a message!");
+        return;
+      }
+
+      // Generate random AES key
+      const aesKey = CryptoJS.lib.WordArray.random(16).toString();
+      
+      // AES Encrypt the message
+      const encrypted = CryptoJS.AES.encrypt(message, aesKey).toString();
+
+      // RSA Encrypt AES key
+      const rsa = new JSEncrypt();
+      rsa.setPublicKey(publicKey);
+      encryptedAESKey = rsa.encrypt(aesKey);
+      ciphertext = encrypted;
+
+      document.getElementById("encryptedOutput").innerText =
+        "🔑 Encrypted AES Key:\n" + encryptedAESKey +
+        "\n\n📩 Ciphertext:\n" + ciphertext;
+    }
+
+    function decryptMessage() {
+      if (!encryptedAESKey || !ciphertext) {
+        alert("Please encrypt a message first!");
+        return;
+      }
+
+      // RSA Decrypt AES key
+      const rsa = new JSEncrypt();
+      rsa.setPrivateKey(privateKey);
+      const decryptedAESKey = rsa.decrypt(encryptedAESKey);
+
+      // AES Decrypt message
+      const bytes = CryptoJS.AES.decrypt(ciphertext, decryptedAESKey);
+      const originalText = bytes.toString(CryptoJS.enc.Utf8);
+
+      document.getElementById("decryptedOutput").innerText =
+        "✅ Decrypted Message: " + originalText;
+    }
+  </script>
+</body>
+</html>
